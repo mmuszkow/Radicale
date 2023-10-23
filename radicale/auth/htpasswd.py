@@ -60,6 +60,7 @@ class Auth(auth.BaseAuth):
 
     _filename: str
     _encoding: str
+    _login_password: [(str, str)]
 
     def __init__(self, configuration: config.Configuration) -> None:
         super().__init__(configuration)
@@ -87,6 +88,23 @@ class Auth(auth.BaseAuth):
             raise RuntimeError("The htpasswd encryption method %r is not "
                                "supported." % encryption)
 
+        self._login_password = []
+        try:
+            with open(self._filename, encoding=self._encoding) as f:
+                for line in f:
+                    line = line.rstrip("\n")
+                    if line.lstrip() and not line.lstrip().startswith("#"):
+                        try:
+                            hash_login, hash_value = line.split(
+                                ":", maxsplit=1)
+                            self._login_password.append((hash_login, hash_value))
+                        except ValueError as e:
+                            raise RuntimeError("Invalid htpasswd file %r: %s" %
+                                               (self._filename, e)) from e
+        except OSError as e:
+            raise RuntimeError("Failed to load htpasswd file %r: %s" %
+                               (self._filename, e)) from e
+
     def _plain(self, hash_value: str, password: str) -> bool:
         """Check if ``hash_value`` and ``password`` match, plain method."""
         return hmac.compare_digest(hash_value.encode(), password.encode())
@@ -104,30 +122,13 @@ class Auth(auth.BaseAuth):
         hash (encrypted password) and check hash against password,
         using the method specified in the Radicale config.
 
-        The content of the file is not cached because reading is generally a
-        very cheap operation, and it's useful to get live updates of the
-        htpasswd file.
-
         """
-        try:
-            with open(self._filename, encoding=self._encoding) as f:
-                for line in f:
-                    line = line.rstrip("\n")
-                    if line.lstrip() and not line.lstrip().startswith("#"):
-                        try:
-                            hash_login, hash_value = line.split(
-                                ":", maxsplit=1)
-                            # Always compare both login and password to avoid
-                            # timing attacks, see #591.
-                            login_ok = hmac.compare_digest(
-                                hash_login.encode(), login.encode())
-                            password_ok = self._verify(hash_value, password)
-                            if login_ok and password_ok:
-                                return login
-                        except ValueError as e:
-                            raise RuntimeError("Invalid htpasswd file %r: %s" %
-                                               (self._filename, e)) from e
-        except OSError as e:
-            raise RuntimeError("Failed to load htpasswd file %r: %s" %
-                               (self._filename, e)) from e
+        for hash_login, hash_value in self._login_password:
+            # Always compare both login and password to avoid
+            # timing attacks, see #591.
+            login_ok = hmac.compare_digest(hash_login.encode(), login.encode())
+            password_ok = self._verify(hash_value, password)
+            if login_ok and password_ok:
+                return login
         return ""
+
