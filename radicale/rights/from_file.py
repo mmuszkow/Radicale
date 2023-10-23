@@ -44,27 +44,28 @@ from radicale.log import logger
 class Rights(rights.BaseRights):
 
     _filename: str
+    _rights_config: configparser.ConfigParser
 
     def __init__(self, configuration: config.Configuration) -> None:
         super().__init__(configuration)
         self._filename = configuration.get("rights", "file")
+        self._rights_config = configparser.ConfigParser()
+        try:
+            with open(self._filename, "r") as f:
+                self._rights_config.read_file(f)
+        except Exception as e:
+            raise RuntimeError("Failed to load rights file %r: %s" %
+                               (self._filename, e)) from e
 
     def authorization(self, user: str, path: str) -> str:
         user = user or ""
         sane_path = pathutils.strip_path(path)
         # Prevent "regex injection"
         escaped_user = re.escape(user)
-        rights_config = configparser.ConfigParser()
-        try:
-            with open(self._filename, "r") as f:
-                rights_config.read_file(f)
-        except Exception as e:
-            raise RuntimeError("Failed to load rights file %r: %s" %
-                               (self._filename, e)) from e
-        for section in rights_config.sections():
+        for section in self._rights_config.sections():
             try:
-                user_pattern = rights_config.get(section, "user")
-                collection_pattern = rights_config.get(section, "collection")
+                user_pattern = self._rights_config.get(section, "user")
+                collection_pattern = self._rights_config.get(section, "collection")
                 # Use empty format() for harmonized handling of curly braces
                 user_match = re.fullmatch(user_pattern.format(), user)
                 collection_match = user_match and re.fullmatch(
@@ -78,7 +79,7 @@ class Rights(rights.BaseRights):
                 logger.debug("Rule %r:%r matches %r:%r from section %r",
                              user, sane_path, user_pattern,
                              collection_pattern, section)
-                return rights_config.get(section, "permissions")
+                return self._rights_config.get(section, "permissions")
             logger.debug("Rule %r:%r doesn't match %r:%r from section %r",
                          user, sane_path, user_pattern, collection_pattern,
                          section)
