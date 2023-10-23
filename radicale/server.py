@@ -361,9 +361,9 @@ def serve(configuration: config.Configuration,
                 if active_server:
                     active_server.handle_request()
     finally:
-        # Wait for clients to finish and close servers
+        # Close connections to clients and close servers
         for server in servers.values():
             for s in server.worker_sockets:
-                s.recv(1)
                 s.close()
             server.server_close()
+
