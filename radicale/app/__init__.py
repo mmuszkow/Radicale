@@ -271,8 +271,8 @@ class Application(ApplicationPartDelete, ApplicationPartHead,
                                            "collection %r: %s", user, e)
                             user = ""
                 else:
-                    logger.warning("Access to principal path %r denied by "
-                                   "rights backend", principal_path)
+                    logger.info("Access to principal path %r denied by "
+                                "rights backend", principal_path)
 
         if self._internal_server:
             # Verify content length
