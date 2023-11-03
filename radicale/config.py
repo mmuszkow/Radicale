@@ -170,6 +170,27 @@ DEFAULT_CONFIG_SCHEMA: types.CONFIG_SCHEMA = OrderedDict([
             "value": "md5",
             "help": "htpasswd encryption method",
             "type": str}),
+        ("ldap_server_uri", {
+            "value": "ldap://127.0.0.1",
+            "help": "URI of LDAP server",
+            "type": str}),
+        ("ldap_bind_dn", {
+            "value": "uid=%%n,ou=People,o=organization,dc=example,dc=com",
+            "help": "Distinguished Name to bind with, "
+                    "'%%n' is used for whole user name, "
+                    "'%%d' for domain part and "
+                    "'%%u' for local part of the username",
+            "type": str}),
+        ("ldap_cache_time", {
+            "value": "1800",
+            "help": "LDAP login cache validity time, "
+                    "default: 30 mins",
+            "type": positive_int}),
+        ("ldap_cache_cleanup_time", {
+            "value": "21600",
+            "help": "LDAP login cache cleanup interval, "
+                    "default: 6 hours",
+            "type": positive_int}),
         ("realm", {
             "value": "Radicale - Password Required",
             "help": "message displayed when a password is needed",
