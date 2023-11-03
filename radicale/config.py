@@ -181,6 +181,16 @@ DEFAULT_CONFIG_SCHEMA: types.CONFIG_SCHEMA = OrderedDict([
                     "'%%d' for domain part and "
                     "'%%u' for local part of the username",
             "type": str}),
+        ("ldap_cache_time", {
+            "value": "1800",
+            "help": "LDAP login cache validity time, "
+                    "default: 30 mins",
+            "type": positive_int}),
+        ("ldap_cache_cleanup_time", {
+            "value": "21600",
+            "help": "LDAP login cache cleanup interval, "
+                    "default: 6 hours",
+            "type": positive_int}),
         ("realm", {
             "value": "Radicale - Password Required",
             "help": "message displayed when a password is needed",

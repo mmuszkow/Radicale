@@ -4,7 +4,7 @@
 # Copyright © 2008-2017 Guillaume Ayoub
 # Copyright © 2017-2018 Unrud<unrud@outlook.com>
 # Copyright © 2019 Marco Fleckinger<marco.fleckinger@gmail.com>
-# Copyright © 2023 Maciek Muszkowsk
+# Copyright © 2023 Maciek Muszkowski
 #
 # This library is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,13 +39,13 @@ class Auth(auth.BaseAuth):
         self.ldap3 = ldap3
         self.server_uri = configuration.get("auth", "ldap_server_uri")
         self.bind_dn_pattern = configuration.get("auth", "ldap_bind_dn")
+        self.cache_time = int(configuration.get("auth", "ldap_cache_time"))
+        self.cleanup_interval = int(configuration.get("auth", "ldap_cache_cleanup_time"))
 
         # not to bomb LDAP too much
         self.cache = {}
-        self.cache_time = 30 * 60 # 30 mins
         self.nonce = urandom(32)
-        self.purge_time = 6 * 60 * 60 # 6 hours
-        self.last_purge = datetime.now()
+        self.last_cleanup = datetime.now()
 
     def login(self, login, password):
         """
@@ -72,11 +72,11 @@ class Auth(auth.BaseAuth):
             
                 del self.cache[login]
 
-        # recreate cache to remove old entries (this is costful)
-        if (now - self.last_purge).total_seconds() > self.purge_time:
+        # recreate cache to remove old entries (this can be costful)
+        if (now - self.last_cleanup).total_seconds() > self.cleanup_interval:
             self.cache = { u: (h, t) for u, (h, t) in self.cache.items()
                            if (now - t).total_seconds() < self.cache_time }
-            self.last_purge = now
+            self.last_cleanup = now
 
         def substitute(match_object):
             """

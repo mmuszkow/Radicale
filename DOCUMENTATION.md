@@ -667,6 +667,10 @@ Available backends:
   authentication. This can be used to provide the username from a reverse
   proxy.
 
+`ldap`
+: Verifies user through binding to selected LDAP server. Successful logins
+  are cached to reduce the load on LDAP server.
+
 Default: `none`
 
 ##### htpasswd_filename
